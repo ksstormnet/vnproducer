@@ -1,0 +1,19 @@
+{
+  "name": "database",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@prisma/client": "^3.0.0"
+  },
+  "devDependencies": {
+    "prisma": "^3.0.0",
+    "dotenv": "^10.0.0"
+  },
+  "scripts": {
+    "prisma": "node loadEnv.js",
+    "prisma:migrate:reset": "node loadEnv.js migrate reset --force",
+    "prisma:migrate:dev": "node loadEnv.js migrate dev --name init",
+    "prisma:migrate:deploy": "node loadEnv.js migrate deploy",
+    "prisma:generate": "node loadEnv.js generate"
+  }
+}

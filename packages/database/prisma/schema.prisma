@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int               @id @default(autoincrement())
+  username         String            @unique
+  email            String            @unique
+  passwordHash     String
+  role             UserRole
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  casts            Cast[]
+  stories          Story[]
+  userStationRoles UserStationRole[]
+
+  @@map("Users")
+}
+
+model Owner {
+  id          Int       @id @default(autoincrement())
+  name        String
+  contactInfo String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  stations    Station[]
+
+  @@map("Owners")
+}
+
+model State {
+  id         Int      @id @default(autoincrement())
+  postalCode String   @unique @db.Char(2)
+  name       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  markets    Market[]
+
+  @@map("States")
+}
+
+model Market {
+  id        Int       @id @default(autoincrement())
+  name      String
+  stateId   Int
+  mainCity  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  state     State     @relation(fields: [stateId], references: [id])
+  stations  Station[]
+
+  @@index([stateId], map: "Markets_stateId_fkey")
+  @@map("Markets")
+}
+
+model Station {
+  id               Int               @id @default(autoincrement())
+  name             String
+  ownerId          Int
+  marketId         Int
+  callSign         String
+  frequency        String?
+  website          String?
+  hasBlog          Boolean           @default(false)
+  blogDisplayType  BlogDisplayType?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  market           Market            @relation(fields: [marketId], references: [id])
+  owner            Owner             @relation(fields: [ownerId], references: [id])
+  casts            Cast[]
+  stationContacts  StationContact[]
+  stationMeta      StationMeta[]
+  stories          Story[]
+  userStationRoles UserStationRole[]
+
+  @@index([marketId], map: "Stations_marketId_fkey")
+  @@index([ownerId], map: "Stations_ownerId_fkey")
+  @@map("Stations")
+}
+
+model StationMeta {
+  id        Int      @id @default(autoincrement())
+  stationId Int
+  key       String
+  value     String   @db.Text
+  type      MetaType
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  station   Station  @relation(fields: [stationId], references: [id])
+
+  @@index([stationId], map: "StationMeta_stationId_fkey")
+}
+
+model StationContact {
+  id        Int      @id @default(autoincrement())
+  stationId Int
+  name      String
+  role      String?
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  station   Station  @relation(fields: [stationId], references: [id])
+
+  @@index([stationId], map: "StationContacts_stationId_fkey")
+  @@map("StationContacts")
+}
+
+model UserStationRole {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  stationId Int
+  role      StaffRole
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  station   Station   @relation(fields: [stationId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([stationId], map: "UserStationRoles_stationId_fkey")
+  @@index([userId], map: "UserStationRoles_userId_fkey")
+  @@map("UserStationRoles")
+}
+
+model Story {
+  id           Int            @id @default(autoincrement())
+  title        String
+  content      String         @db.Text
+  authorId     Int
+  stationId    Int
+  status       StoryStatus
+  embargoUntil DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  author       User           @relation(fields: [authorId], references: [id])
+  station      Station        @relation(fields: [stationId], references: [id])
+  audioClips   AudioClip[]
+  castStories  CastStory[]
+  versions     StoryVersion[]
+
+  @@index([authorId], map: "Stories_authorId_fkey")
+  @@index([stationId], map: "Stories_stationId_fkey")
+  @@map("Stories")
+}
+
+model StoryVersion {
+  id            Int      @id @default(autoincrement())
+  storyId       Int
+  content       String   @db.Text
+  versionNumber Int
+  createdAt     DateTime @default(now())
+  story         Story    @relation(fields: [storyId], references: [id])
+
+  @@index([storyId], map: "StoryVersions_storyId_fkey")
+  @@map("StoryVersions")
+}
+
+model AudioClip {
+  id        Int      @id @default(autoincrement())
+  storyId   Int
+  filePath  String
+  duration  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  story     Story    @relation(fields: [storyId], references: [id])
+
+  @@index([storyId], map: "AudioClips_storyId_fkey")
+  @@map("AudioClips")
+}
+
+model Cast {
+  id          Int         @id @default(autoincrement())
+  stationId   Int
+  anchorId    Int
+  templateId  Int
+  title       String
+  airDate     DateTime?
+  status      CastStatus
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  anchor      User        @relation(fields: [anchorId], references: [id])
+  station     Station     @relation(fields: [stationId], references: [id])
+  template    Template    @relation(fields: [templateId], references: [id])
+  castStories CastStory[]
+
+  @@index([anchorId], map: "Casts_anchorId_fkey")
+  @@index([stationId], map: "Casts_stationId_fkey")
+  @@index([templateId], map: "Casts_templateId_fkey")
+  @@map("Casts")
+}
+
+model CastStory {
+  id        Int      @id @default(autoincrement())
+  castId    Int
+  storyId   Int
+  order     Int
+  createdAt DateTime @default(now())
+  cast      Cast     @relation(fields: [castId], references: [id])
+  story     Story    @relation(fields: [storyId], references: [id])
+
+  @@index([castId], map: "CastStories_castId_fkey")
+  @@index([storyId], map: "CastStories_storyId_fkey")
+  @@map("CastStories")
+}
+
+model Template {
+  id        Int      @id @default(autoincrement())
+  name      String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  casts     Cast[]
+
+  @@map("Templates")
+}
+
+enum UserRole {
+  SuperAdmin
+  Admin
+  Staff
+}
+
+enum StaffRole {
+  Reporter
+  Anchor
+}
+
+enum StoryStatus {
+  Draft
+  Published
+  Archived
+}
+
+enum CastStatus {
+  Draft
+  Recorded
+  Published
+}
+
+enum MetaType {
+  text
+  document
+  image
+}
+
+enum BlogDisplayType {
+  Full
+  Excerpt
+}
