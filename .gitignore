@@ -1,0 +1,8 @@
+# Ignore .env files
+.env
+
+# IDE - VSCode
+.vscode
+
+# Node Modules - NPM
+node_modules
